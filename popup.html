@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Follow-Up Ticker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #F7F6F3;
+      --surface: #FFFFFF;
+      --border: #E8E5DF;
+      --border2: #D4D0C8;
+      --text: #1A1916;
+      --muted: #9B9689;
+      --accent: #1A1916;
+      --overdue: #E8402A;
+      --today: #D97706;
+      --upcoming: #2563EB;
+      --done-bg: #F0EEE8;
+      --done-text: #B5B0A4;
+      --tag-bg: #EDEAE3;
+      --green: #16A34A;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 400px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+    }
+
+    /* HEADER */
+    .header {
+      padding: 16px 18px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      width: 34px; height: 34px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+    .header-info { flex: 1; }
+    .header-info h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-info p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .header-right { display: flex; gap: 6px; }
+    .hbtn {
+      background: none; border: 1px solid var(--border2);
+      border-radius: 6px; width: 30px; height: 30px;
+      display: grid; place-items: center;
+      font-size: 13px; cursor: pointer; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .hbtn:hover { background: var(--tag-bg); color: var(--text); }
+    .hbtn[title="Export CSV"]::after { content: 'CSV'; font-size: 8px; display: block; margin-top: -2px; }
+
+    /* STATS BAR */
+    .stats {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat {
+      flex: 1; text-align: center;
+      padding: 8px 0;
+      border-right: 1px solid var(--border);
+      cursor: pointer; transition: background 0.1s;
+    }
+    .stat:last-child { border-right: none; }
+    .stat:hover { background: var(--bg); }
+    .stat-num {
+      font-size: 18px; font-weight: 700;
+      line-height: 1; font-family: 'DM Mono', monospace;
+    }
+    .stat-label {
+      font-size: 10px; color: var(--muted);
+      margin-top: 2px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .stat-num.red { color: var(--overdue); }
+    .stat-num.amber { color: var(--today); }
+    .stat-num.blue { color: var(--upcoming); }
+    .stat-num.grey { color: var(--muted); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.15); }
+    }
+    .pulse { animation: pulse 1.2s ease-in-out infinite; display: inline-block; }
+
+    /* ADD FORM */
+    .add-section {
+      padding: 12px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .form-row:last-child { margin-bottom: 0; }
+
+    input, select {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 8px 10px;
+      transition: border-color 0.15s;
+      min-width: 0;
+    }
+    input { width: 100%; }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+    select { cursor: pointer; flex-shrink: 0; }
+
+    .add-btn {
+      background: var(--accent); color: white;
+      border: none; border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600; font-size: 13px;
+      padding: 8px 14px; cursor: pointer;
+      white-space: nowrap; transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .add-btn:hover { opacity: 0.85; }
+
+    /* FILTER ROW */
+    .filter-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 18px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 10px; color: var(--muted);
+      font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .fbtn {
+      font-size: 11px; font-weight: 500;
+      padding: 3px 9px; border-radius: 20px;
+      border: 1px solid var(--border2);
+      background: none; color: var(--muted);
+      cursor: pointer; transition: all 0.12s;
+    }
+    .fbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .fbtn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* LIST */
+    .list-section {
+      padding: 10px 18px 14px;
+      min-height: 120px;
+    }
+
+    .empty {
+      text-align: center; padding: 24px 16px;
+      color: var(--muted); line-height: 1.7;
+    }
+    .empty .e-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+    .empty strong { color: var(--text); }
+
+    .group-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin: 10px 0 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .group-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      display: flex; align-items: flex-start; gap: 10px;
+      transition: all 0.15s;
+      animation: fadeUp 0.18s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .item:hover { border-color: var(--border2); }
+    .item.done-item { background: var(--done-bg); border-color: transparent; }
+    .item.done-item .item-task,
+    .item.done-item .item-client { color: var(--done-text); text-decoration: line-through; }
+
+    .item-check {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border2);
+      border-radius: 4px; flex-shrink: 0;
+      margin-top: 1px; cursor: pointer;
+      display: grid; place-items: center;
+      transition: all 0.12s;
+      font-size: 10px; color: white;
+    }
+    .item-check:hover { border-color: var(--green); }
+    .item-check.checked { background: var(--green); border-color: var(--green); }
+
+    .item-body { flex: 1; min-width: 0; }
+    .item-client {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin-bottom: 2px;
+    }
+    .item-task {
+      font-size: 13px; font-weight: 500;
+      word-break: break-word; line-height: 1.4;
+    }
+    .item-meta {
+      display: flex; align-items: center;
+      gap: 6px; margin-top: 5px; flex-wrap: wrap;
+    }
+
+    .due-badge {
+      font-size: 10px; font-family: 'DM Mono', monospace;
+      padding: 2px 6px; border-radius: 4px; font-weight: 500;
+    }
+    .due-overdue  { background: #FEE2E2; color: var(--overdue); }
+    .due-today    { background: #FEF3C7; color: var(--today); }
+    .due-upcoming { background: #DBEAFE; color: var(--upcoming); }
+    .due-done     { background: var(--tag-bg); color: var(--muted); }
+
+    .pri-badge {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .pri-high   { background: #FEE2E2; color: #DC2626; }
+    .pri-medium { background: #FEF3C7; color: #92400E; }
+    .pri-low    { background: #DCFCE7; color: #15803D; }
+
+    /* ITEM ACTIONS */
+    .item-actions {
+      display: flex; flex-direction: column;
+      gap: 4px; flex-shrink: 0; opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .item:hover .item-actions { opacity: 1; }
+    .item-btn {
+      background: none; border: none;
+      font-size: 12px; color: var(--muted);
+      cursor: pointer; padding: 2px;
+      line-height: 1; transition: color 0.1s;
+    }
+    .item-btn:hover { color: var(--text); }
+    .item-btn.del:hover { color: var(--overdue); }
+    .item-btn.edit:hover { color: var(--upcoming); }
+
+    /* EDIT MODE */
+    .edit-row {
+      display: flex; gap: 6px; margin-top: 8px;
+      flex-wrap: wrap; align-items: center;
+    }
+    .edit-row input, .edit-row select {
+      font-size: 12px; padding: 4px 8px;
+    }
+    .edit-save {
+      background: var(--accent); color: white;
+      border: none; border-radius: 6px;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; cursor: pointer;
+    }
+    .edit-cancel {
+      background: none; border: 1px solid var(--border2);
+      border-radius: 6px; font-size: 11px;
+      padding: 4px 10px; cursor: pointer; color: var(--muted);
+    }
+
+    /* DONE TOGGLE */
+    .done-toggle {
+      text-align: center; font-size: 11px;
+      color: var(--muted); cursor: pointer;
+      padding: 6px; border-radius: 6px;
+      transition: background 0.12s; margin-top: 4px;
+    }
+    .done-toggle:hover { background: var(--border); color: var(--text); }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 12px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent); color: white;
+      font-size: 12px; font-weight: 600;
+      padding: 7px 16px; border-radius: 20px;
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none; z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">📌</div>
+    <div class="header-info">
+      <h1>Follow-Up Ticker</h1>
+      <p id="headerSub">Your CSM commitment tracker</p>
+    </div>
+    <div class="header-right">
+      <button class="hbtn" id="exportBtn" title="Export CSV">↓</button>
+      <button class="hbtn" id="clearDoneBtn" title="Clear completed">🗑</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat" data-filter="overdue">
+      <div class="stat-num red" id="countOverdue">0</div>
+      <div class="stat-label">Overdue</div>
+    </div>
+    <div class="stat" data-filter="today">
+      <div class="stat-num amber" id="countToday">0</div>
+      <div class="stat-label">Due Today</div>
+    </div>
+    <div class="stat" data-filter="upcoming">
+      <div class="stat-num blue" id="countUpcoming">0</div>
+      <div class="stat-label">Upcoming</div>
+    </div>
+    <div class="stat" data-filter="done">
+      <div class="stat-num grey" id="countDone">0</div>
+      <div class="stat-label">Done</div>
+    </div>
+  </div>
+
+  <div class="add-section">
+    <div class="form-row">
+      <input type="text" id="clientInput" placeholder="Client / Account name" style="flex:1" />
+      <select id="priorityInput" style="width:130px">
+        <option value="high">🔴 High</option>
+        <option value="medium" selected>🟡 Medium</option>
+        <option value="low">🟢 Low</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <input type="text" id="taskInput" placeholder="Commitment (e.g. send renewal doc)" style="flex:1" />
+      <input type="date" id="dueInput" style="width:148px; flex-shrink:0" />
+      <button class="add-btn" id="addBtn">+ Add</button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <span class="filter-label">Show:</span>
+    <button class="fbtn active" data-filter="all">All</button>
+    <button class="fbtn" data-filter="overdue">Overdue</button>
+    <button class="fbtn" data-filter="today">Today</button>
+    <button class="fbtn" data-filter="upcoming">Upcoming</button>
+    <button class="fbtn" data-filter="done">Done</button>
+  </div>
+
+  <div class="list-section" id="listSection"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
