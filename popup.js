@@ -44,6 +44,10 @@ function classify(item) {
   return 'upcoming';
 }
 
+function sortByDate(arr) {
+  return [...arr].sort((a, b) => a.due > b.due ? 1 : -1);
+}
+
 // ── Listeners
 function setupListeners() {
   document.getElementById('addBtn').addEventListener('click', addItem);
@@ -84,7 +88,12 @@ function addItem() {
   if (!client) { shake('clientInput'); return; }
   if (!task)   { shake('taskInput');   return; }
   if (!due)    { shake('dueInput');    return; }
-  allItems.unshift({ id: Date.now().toString(), client, task, due, priority, done: false, createdAt: Date.now() });
+  allItems.unshift({
+    id: Date.now().toString(),
+    client, task, due, priority,
+    done: false,
+    createdAt: Date.now()
+  });
   save(() => {
     document.getElementById('clientInput').value = '';
     document.getElementById('taskInput').value = '';
@@ -111,8 +120,6 @@ function renderStats() {
   document.getElementById('countToday').textContent    = counts.today;
   document.getElementById('countUpcoming').textContent = counts.upcoming;
   document.getElementById('countDone').textContent     = counts.done;
-
-  // Pulse overdue number if any
   const overdueEl = document.getElementById('countOverdue');
   if (counts.overdue > 0) {
     overdueEl.classList.add('pulse');
@@ -158,10 +165,10 @@ function renderList() {
 
   if (activeFilter === 'all') {
     const groups = {
-      overdue:  filtered.filter(i => classify(i) === 'overdue'),
-      today:    filtered.filter(i => classify(i) === 'today'),
-      upcoming: filtered.filter(i => classify(i) === 'upcoming'),
-      done:     filtered.filter(i => classify(i) === 'done'),
+      overdue:  sortByDate(filtered.filter(i => classify(i) === 'overdue')),
+      today:    sortByDate(filtered.filter(i => classify(i) === 'today')),
+      upcoming: sortByDate(filtered.filter(i => classify(i) === 'upcoming')),
+      done:     sortByDate(filtered.filter(i => classify(i) === 'done')),
     };
     let html = '';
     if (groups.overdue.length)  html += groupHTML('🔴 Overdue', groups.overdue);
@@ -178,11 +185,13 @@ function renderList() {
         const dg = document.getElementById('doneGroup');
         const open = dg.style.display !== 'none';
         dg.style.display = open ? 'none' : 'block';
-        tog.textContent = open ? `▸ Show ${groups.done.length} completed` : `▾ Hide completed`;
+        tog.textContent = open
+          ? `▸ Show ${groups.done.length} completed`
+          : `▾ Hide completed`;
       });
     }
   } else {
-    el.innerHTML = itemsHTML(filtered);
+    el.innerHTML = itemsHTML(sortByDate(filtered));
   }
 
   wireActions();
@@ -198,7 +207,7 @@ function itemsHTML(items) {
 
 function itemHTML(item) {
   const cls = classify(item);
-  const checked = item.done ? 'checked' : '';
+  const checked   = item.done ? 'checked' : '';
   const checkIcon = item.done ? '✓' : '';
   const dueLabel = {
     overdue:  `Overdue · ${formatDate(item.due)}`,
@@ -220,20 +229,29 @@ function itemHTML(item) {
           <span class="pri-badge pri-${item.priority}">${priLabel}</span>
         </div>
         ${isEditing ? `
-        <div class="edit-row">
-          <input type="date" class="edit-due" value="${item.due}" style="width:140px" />
-          <select class="edit-pri" style="width:110px">
-            <option value="high" ${item.priority==='high'?'selected':''}>🔴 High</option>
-            <option value="medium" ${item.priority==='medium'?'selected':''}>🟡 Medium</option>
-            <option value="low" ${item.priority==='low'?'selected':''}>🟢 Low</option>
-          </select>
-          <button class="edit-save" data-id="${item.id}">Save</button>
-          <button class="edit-cancel">Cancel</button>
+        <div class="edit-row" style="flex-direction:column; align-items:stretch;">
+          <input
+            type="text"
+            class="edit-task"
+            value="${esc(item.task)}"
+            placeholder="Edit commitment..."
+            style="width:100%; margin-bottom:6px;"
+          />
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="date" class="edit-due" value="${item.due}" style="width:140px" />
+            <select class="edit-pri" style="width:110px">
+              <option value="high"   ${item.priority==='high'   ?'selected':''}>🔴 High</option>
+              <option value="medium" ${item.priority==='medium' ?'selected':''}>🟡 Medium</option>
+              <option value="low"    ${item.priority==='low'    ?'selected':''}>🟢 Low</option>
+            </select>
+            <button class="edit-save" data-id="${item.id}">Save</button>
+            <button class="edit-cancel">Cancel</button>
+          </div>
         </div>` : ''}
       </div>
       <div class="item-actions">
         <button class="item-btn edit" data-id="${item.id}" title="Edit">✏️</button>
-        <button class="item-btn del" data-id="${item.id}" title="Delete">✕</button>
+        <button class="item-btn del"  data-id="${item.id}" title="Delete">✕</button>
       </div>
     </div>`;
 }
@@ -265,7 +283,10 @@ function toggleDone(id) {
   const idx = allItems.findIndex(i => i.id === id);
   if (idx === -1) return;
   allItems[idx].done = !allItems[idx].done;
-  save(() => { renderAll(); showToast(allItems[idx].done ? 'Marked complete ✓' : 'Reopened'); });
+  save(() => {
+    renderAll();
+    showToast(allItems[idx].done ? 'Marked complete ✓' : 'Reopened');
+  });
 }
 
 function deleteItem(id) {
@@ -276,9 +297,11 @@ function deleteItem(id) {
 function saveEdit(id) {
   const idx = allItems.findIndex(i => i.id === id);
   if (idx === -1) return;
-  const newDue = document.querySelector('.edit-due').value;
-  const newPri = document.querySelector('.edit-pri').value;
-  if (newDue) allItems[idx].due = newDue;
+  const newTask = document.querySelector('.edit-task').value.trim();
+  const newDue  = document.querySelector('.edit-due').value;
+  const newPri  = document.querySelector('.edit-pri').value;
+  if (newTask) allItems[idx].task     = newTask;
+  if (newDue)  allItems[idx].due      = newDue;
   allItems[idx].priority = newPri;
   editingId = null;
   save(() => { renderAll(); showToast('Updated ✓'); });
