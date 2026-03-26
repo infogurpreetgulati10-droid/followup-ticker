@@ -1,6 +1,6 @@
 # 📌 Follow-Up Ticker
 
-A lightweight Chrome extension built for Customer Success Managers to track client commitments — log a follow-up in under 5 seconds, never drop a promise again.
+A lightweight Chrome extension built for Customer Success Managers to track client commitments, log a follow-up in under 5 seconds, never drop a promise again.
 
 ---
 
@@ -8,7 +8,7 @@ A lightweight Chrome extension built for Customer Success Managers to track clie
 
 CSMs make verbal commitments constantly — on calls, in Slack, during QBRs. There's no lightweight way to capture these in the moment without switching to a CRM or task manager. Things fall through the cracks.
 
-**Follow-Up Ticker lives in your browser toolbar** — one click, log it, done.
+**Follow-Up Ticker lives in your browser toolbar**, one click, log it, done.
 
 ---
 
